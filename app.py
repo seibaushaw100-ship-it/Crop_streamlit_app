@@ -72,22 +72,6 @@ if st.button("🌾 Recommend Crop"):
             "Probability": probabilities[0]
         })
         st.bar_chart(prob_df.set_index("Crop"))
-import streamlit as st
-
-st.title("🌱 Crop Prediction App")
-
-st.write("Welcome! This app predicts crop outcomes.")
-
-value = st.number_input("Enter a value")
-
-if st.button("Predict"):
-    st.write("Prediction:", value)
-
-# About section
-st.write("---")
-st.write("### 📘 About This Project")
-st.write("This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning models. It helps farmers make data-driven decisions for improved agricultural productivity.")
-
 # About section
 st.write("---")
 st.write("### 📘 About This Project")
