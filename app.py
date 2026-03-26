@@ -1,22 +1,26 @@
-```python
 import streamlit as st
 import numpy as np
 import pickle
 import pandas as pd
 import os
+import shap
 
-# ✅ Page config
+# =========================
+# ⚙️ PAGE CONFIG
+# =========================
 st.set_page_config(
     page_title="Smart Crop System",
     page_icon="🌱",
     layout="wide"
 )
 
-# ✅ UI Styling (Dashboard Level)
+# =========================
+# 🎨 UI STYLING
+# =========================
 st.markdown("""
 <style>
 
-/* 🌈 Background */
+/* Background */
 html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #dbeafe, #f0fdf4) !important;
 }
@@ -25,8 +29,16 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
-[data-testid="stSidebar"] * {
-    color: white;
+
+/* Sidebar text fix */
+[data-testid="stSidebar"] label {
+    color: white !important;
+}
+
+/* Fix input visibility */
+[data-testid="stSidebar"] input {
+    color: black !important;
+    background-color: #ecfdf5 !important;
 }
 
 /* Glass container */
@@ -70,29 +82,87 @@ h1 {
     color: #022c22;
 }
 
+/* 📱 Mobile Optimization */
+@media (max-width: 768px) {
+
+    .glass {
+        padding: 15px !important;
+        border-radius: 15px !important;
+    }
+
+    .card {
+        padding: 15px !important;
+    }
+
+    h1 {
+        font-size: 22px !important;
+    }
+
+    .stButton>button {
+        font-size: 16px !important;
+        padding: 10px !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ✅ Load model
-base_path = os.path.dirname(__file__)
-model = pickle.load(open(os.path.join(base_path, 'model.pkl'), 'rb'))
-scaler = pickle.load(open(os.path.join(base_path, 'scaler.pkl'), 'rb'))
+# =========================
+# ⚡ LOAD MODEL (CACHED)
+# =========================
+@st.cache_resource
+def load_model():
+    base_path = os.path.dirname(__file__)
+    model = pickle.load(open(os.path.join(base_path, 'model.pkl'), 'rb'))
+    scaler = pickle.load(open(os.path.join(base_path, 'scaler.pkl'), 'rb'))
+    return model, scaler
 
-# ✅ Title
+model, scaler = load_model()
+
+# =========================
+# 🧠 LOAD SHAP EXPLAINER
+# =========================
+@st.cache_resource
+def load_explainer(model):
+    return shap.Explainer(model)
+
+explainer = load_explainer(model)
+
+# =========================
+# 🌱 TITLE
+# =========================
 st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
 
-# ✅ Sidebar Inputs
+# =========================
+# 📊 INPUTS (SIDEBAR)
+# =========================
 st.sidebar.header("🌍 Input Parameters")
 
-N = st.sidebar.number_input("Nitrogen (N)", 0.0)
-P = st.sidebar.number_input("Phosphorus (P)", 0.0)
-K = st.sidebar.number_input("Potassium (K)", 0.0)
-temperature = st.sidebar.number_input("Temperature (°C)", 0.0)
-humidity = st.sidebar.number_input("Humidity (%)", 0.0)
-ph = st.sidebar.number_input("Soil pH", 0.0)
-rainfall = st.sidebar.number_input("Rainfall (mm)", 0.0)
+N = st.sidebar.number_input("Nitrogen (N)", min_value=0.0, value=50.0)
+P = st.sidebar.number_input("Phosphorus (P)", min_value=0.0, value=50.0)
+K = st.sidebar.number_input("Potassium (K)", min_value=0.0, value=50.0)
+temperature = st.sidebar.number_input("Temperature (°C)", value=25.0)
+humidity = st.sidebar.number_input("Humidity (%)", value=60.0)
+ph = st.sidebar.number_input("Soil pH", value=6.5)
+rainfall = st.sidebar.number_input("Rainfall (mm)", value=100.0)
 
-# ✅ Tabs
+# =========================
+# 🎯 CROP ICONS
+# =========================
+crop_icons = {
+    "rice": "🌾",
+    "maize": "🌽",
+    "apple": "🍎",
+    "banana": "🍌",
+    "mango": "🥭",
+    "orange": "🍊",
+    "cotton": "🧵",
+    "coffee": "☕"
+}
+
+# =========================
+# 📑 TABS
+# =========================
 tab1, tab2, tab3 = st.tabs(["🌾 Prediction", "📊 Insights", "📘 About"])
 
 # =========================
@@ -101,28 +171,34 @@ tab1, tab2, tab3 = st.tabs(["🌾 Prediction", "📊 Insights", "📘 About"])
 with tab1:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        recommend = st.button("🌱 Recommend Crop", use_container_width=True)
+    st.markdown("### 🌿 Run Prediction")
+    recommend = st.button("🌱 Recommend Crop", use_container_width=True)
 
     if recommend:
-        if N == 0 or P == 0 or K == 0:
-            st.warning("⚠️ Please enter valid soil nutrient values.")
+        if any(v <= 0 for v in [N, P, K, temperature, humidity, ph, rainfall]):
+            st.warning("⚠️ Please enter all values greater than 0.")
         else:
             input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
             input_scaled = scaler.transform(input_data)
 
-            prediction = model.predict(input_scaled)
-            probabilities = model.predict_proba(input_scaled)
+            with st.spinner("Analyzing soil data... 🌱"):
+                prediction = model.predict(input_scaled)
+                probabilities = model.predict_proba(input_scaled)
+                shap_values = explainer(input_scaled)
+
             confidence = np.max(probabilities) * 100
 
-            # Save to session for other tabs
+            # Save for other tabs
             st.session_state["prediction"] = prediction
             st.session_state["probabilities"] = probabilities
+            st.session_state["shap_values"] = shap_values
+
+            crop = prediction[0]
+            icon = crop_icons.get(crop.lower(), "🌱")
 
             st.markdown(f"""
-            <div class="card" style="text-align:center; font-size:26px;">
-                🌾 <b>{prediction[0]}</b>
+            <div class="card" style="text-align:center; font-size:28px;">
+                {icon} <b>{crop}</b>
             </div>
             """, unsafe_allow_html=True)
 
@@ -145,13 +221,15 @@ with tab2:
             "Probability": probabilities[0]
         })
 
-        # Chart
+        # Top 5 chart
+        top_df = prob_df.sort_values(by="Probability", ascending=False).head(5)
+
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### 📊 Prediction Probabilities")
-        st.bar_chart(prob_df.set_index("Crop"))
+        st.write("### 📊 Top Predictions")
+        st.bar_chart(top_df.set_index("Crop"))
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Top 3
+        # Top 3 text
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 🌾 Top 3 Crops")
 
@@ -162,6 +240,19 @@ with tab2:
             st.write(f"{model.classes_[i]} → {probs[i]*100:.2f}%")
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # SHAP Explainability
+        if "shap_values" in st.session_state:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.write("### 🧠 Why this prediction?")
+
+            shap_values = st.session_state["shap_values"]
+
+            st.set_option('deprecation.showPyplotGlobalUse', False)
+            shap.plots.bar(shap_values[0], show=False)
+            st.pyplot(bbox_inches='tight')
+
+            st.markdown('</div>', unsafe_allow_html=True)
 
     else:
         st.info("Run a prediction first to see insights.")
@@ -176,10 +267,24 @@ with tab3:
 
     st.markdown("""
     <div class="card">
-    <h3>📘 About This Project</h3>
-    <p>This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning.</p>
+    <h3>📘 About This System</h3>
+
+    <p>
+    This AI-powered system recommends the best crops based on:
+    </p>
+
+    <ul>
+    <li>🌱 Soil nutrients (N, P, K)</li>
+    <li>🌡 Temperature</li>
+    <li>💧 Humidity</li>
+    <li>🧪 Soil pH</li>
+    <li>🌧 Rainfall</li>
+    </ul>
+
+    <p>
+    Built using <b>Machine Learning</b>, <b>Streamlit</b>, and <b>Explainable AI (SHAP)</b>.
+    </p>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-```
