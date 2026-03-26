@@ -3,7 +3,6 @@ import numpy as np
 import pickle
 import pandas as pd
 import os
-import shap
 
 # =========================
 # ⚙️ PAGE CONFIG
@@ -22,20 +21,16 @@ st.markdown("""
 html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #dbeafe, #f0fdf4) !important;
 }
-
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
-
 [data-testid="stSidebar"] label {
     color: white !important;
 }
-
 [data-testid="stSidebar"] input {
     color: black !important;
     background-color: #ecfdf5 !important;
 }
-
 .glass {
     background: rgba(255,255,255,0.85);
     padding: 30px;
@@ -43,7 +38,6 @@ html, body, [data-testid="stAppViewContainer"] {
     backdrop-filter: blur(12px);
     box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
-
 .card {
     background: white;
     padding: 20px;
@@ -51,7 +45,6 @@ html, body, [data-testid="stAppViewContainer"] {
     box-shadow: 0 6px 20px rgba(0,0,0,0.08);
     margin-top: 15px;
 }
-
 .stButton>button {
     background: linear-gradient(90deg, #22c55e, #15803d);
     color: white;
@@ -59,12 +52,10 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 14px;
     font-size: 18px;
 }
-
 .stNumberInput input {
     background-color: #ecfdf5;
     border-radius: 10px;
 }
-
 h1 {
     text-align: center;
     color: #022c22;
@@ -96,15 +87,6 @@ def load_model():
     return model, scaler
 
 model, scaler = load_model()
-
-# =========================
-# 🧠 LOAD SHAP
-# =========================
-@st.cache_resource
-def load_explainer():
-    return shap.Explainer(model)
-
-explainer = load_explainer()
 
 # =========================
 # 🌱 TITLE
@@ -149,13 +131,11 @@ with tab1:
             with st.spinner("Analyzing soil data... 🌱"):
                 prediction = model.predict(input_scaled)
                 probabilities = model.predict_proba(input_scaled)
-                shap_values = explainer(input_scaled)
 
             confidence = np.max(probabilities) * 100
 
             st.session_state["prediction"] = prediction
             st.session_state["probabilities"] = probabilities
-            st.session_state["shap_values"] = shap_values
 
             crop = prediction[0]
             icon = crop_icons.get(crop.lower(), "🌱")
@@ -205,31 +185,29 @@ with tab2:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # SHAP
-        if "shap_values" in st.session_state:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.write("### 🧠 Why this prediction?")
+        # 💡 SIMPLE EXPLANATION
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.write("### 💡 Why this crop?")
 
-            shap_values = st.session_state["shap_values"]
+        crop_explanations = {
+            "rice": "Rice thrives in high rainfall and high humidity conditions.",
+            "maize": "Maize grows well with moderate rainfall and balanced soil nutrients.",
+            "coffee": "Coffee requires specific temperature ranges and consistent rainfall.",
+            "banana": "Banana grows best in warm temperatures with high humidity.",
+            "apple": "Apple requires cooler temperatures and well-balanced soil nutrients.",
+            "mango": "Mango prefers warm climates with moderate rainfall.",
+            "orange": "Orange grows well in slightly acidic soil with good rainfall.",
+            "cotton": "Cotton thrives in warm temperatures with moderate rainfall and well-drained soil."
+        }
 
-            values = shap_values.values
+        crop_name = st.session_state["prediction"][0].lower()
 
-            if len(values.shape) == 3:
-                values = values[0, :, 0]
-            else:
-                values = values[0]
+        st.write(crop_explanations.get(
+            crop_name,
+            "This crop is suitable based on your soil nutrients and environmental conditions."
+        ))
 
-            feature_names = ["N", "P", "K", "Temperature", "Humidity", "pH", "Rainfall"]
-
-            shap_df = pd.DataFrame({
-                "Feature": feature_names,
-                "Impact": values
-            }).sort_values(by="Impact", key=abs, ascending=False)
-
-            st.write("Positive = increases prediction, Negative = decreases")
-            st.bar_chart(shap_df.set_index("Feature"))
-
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     else:
         st.info("Run a prediction first to see insights.")
@@ -257,7 +235,7 @@ with tab3:
     </ul>
 
     <p>
-    Built with <b>Machine Learning</b>, <b>Streamlit</b>, and <b>SHAP</b>.
+    Built with <b>Machine Learning</b> and <b>Streamlit</b>.
     </p>
     </div>
     """, unsafe_allow_html=True)
