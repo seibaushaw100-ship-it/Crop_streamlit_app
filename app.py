@@ -120,14 +120,13 @@ def load_model():
 model, scaler = load_model()
 
 # =========================
-# 🧠 LOAD SHAP EXPLAINER
+# 🧠 LOAD SHAP EXPLAINER (FIXED)
 # =========================
 @st.cache_resource
-def load_explainer(model):
+def load_explainer():
     return shap.Explainer(model)
 
-explainer = load_explainer(model)
-
+explainer = load_explainer()
 # =========================
 # 🌱 TITLE
 # =========================
