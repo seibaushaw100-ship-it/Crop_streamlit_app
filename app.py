@@ -19,29 +19,23 @@ st.set_page_config(
 # =========================
 st.markdown("""
 <style>
-
-/* Background */
 html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #dbeafe, #f0fdf4) !important;
 }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
 
-/* Sidebar text */
 [data-testid="stSidebar"] label {
     color: white !important;
 }
 
-/* Inputs */
 [data-testid="stSidebar"] input {
     color: black !important;
     background-color: #ecfdf5 !important;
 }
 
-/* Glass container */
 .glass {
     background: rgba(255,255,255,0.85);
     padding: 30px;
@@ -50,7 +44,6 @@ html, body, [data-testid="stAppViewContainer"] {
     box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
-/* Cards */
 .card {
     background: white;
     padding: 20px;
@@ -59,7 +52,6 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-top: 15px;
 }
 
-/* Button */
 .stButton>button {
     background: linear-gradient(90deg, #22c55e, #15803d);
     color: white;
@@ -68,23 +60,20 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 18px;
 }
 
-/* Inputs */
 .stNumberInput input {
     background-color: #ecfdf5;
     border-radius: 10px;
 }
 
-/* Title */
 h1 {
     text-align: center;
     color: #022c22;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# 📥 SIDEBAR INPUTS (FIXED)
+# 📥 SIDEBAR INPUTS
 # =========================
 st.sidebar.header("🌾 Input Soil Data")
 
@@ -164,7 +153,6 @@ with tab1:
 
             confidence = np.max(probabilities) * 100
 
-            # Save state
             st.session_state["prediction"] = prediction
             st.session_state["probabilities"] = probabilities
             st.session_state["shap_values"] = shap_values
@@ -181,6 +169,7 @@ with tab1:
             st.success(f"Confidence: {confidence:.2f}%")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 # =========================
 # 📊 TAB 2
 # =========================
@@ -216,14 +205,19 @@ with tab2:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # ✅ SHAP (FIXED POSITION + INDENTATION)
+        # SHAP
         if "shap_values" in st.session_state:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.write("### 🧠 Why this prediction?")
 
             shap_values = st.session_state["shap_values"]
 
-            values = shap_values.values[0]
+            values = shap_values.values
+
+            if len(values.shape) == 3:
+                values = values[0, :, 0]
+            else:
+                values = values[0]
 
             feature_names = ["N", "P", "K", "Temperature", "Humidity", "pH", "Rainfall"]
 
@@ -241,6 +235,7 @@ with tab2:
         st.info("Run a prediction first to see insights.")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 # =========================
 # 📘 TAB 3
 # =========================
