@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import os
 import shap
+import matplotlib.pyplot as plt
 
 # =========================
 # ⚙️ PAGE CONFIG
@@ -30,12 +31,12 @@ html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
 
-/* Sidebar text fix */
+/* Sidebar text */
 [data-testid="stSidebar"] label {
     color: white !important;
 }
 
-/* Fix input visibility */
+/* Inputs */
 [data-testid="stSidebar"] input {
     color: black !important;
     background-color: #ecfdf5 !important;
@@ -66,14 +67,12 @@ html, body, [data-testid="stAppViewContainer"] {
     border-radius: 14px;
     padding: 14px;
     font-size: 18px;
-    box-shadow: 0 6px 15px rgba(34,197,94,0.4);
 }
 
 /* Inputs */
 .stNumberInput input {
     background-color: #ecfdf5;
     border-radius: 10px;
-    border: 1px solid #bbf7d0;
 }
 
 /* Title */
@@ -82,33 +81,24 @@ h1 {
     color: #022c22;
 }
 
-/* 📱 Mobile Optimization */
-@media (max-width: 768px) {
-
-    .glass {
-        padding: 15px !important;
-        border-radius: 15px !important;
-    }
-
-    .card {
-        padding: 15px !important;
-    }
-
-    h1 {
-        font-size: 22px !important;
-    }
-
-    .stButton>button {
-        font-size: 16px !important;
-        padding: 10px !important;
-    }
-}
-
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# ⚡ LOAD MODEL (CACHED)
+# 📥 SIDEBAR INPUTS (FIXED)
+# =========================
+st.sidebar.header("🌾 Input Soil Data")
+
+N = st.sidebar.number_input("Nitrogen (N)", min_value=0.0)
+P = st.sidebar.number_input("Phosphorus (P)", min_value=0.0)
+K = st.sidebar.number_input("Potassium (K)", min_value=0.0)
+temperature = st.sidebar.number_input("Temperature (°C)", min_value=0.0)
+humidity = st.sidebar.number_input("Humidity (%)", min_value=0.0)
+ph = st.sidebar.number_input("pH", min_value=0.0)
+rainfall = st.sidebar.number_input("Rainfall (mm)", min_value=0.0)
+
+# =========================
+# ⚡ LOAD MODEL
 # =========================
 @st.cache_resource
 def load_model():
@@ -120,33 +110,21 @@ def load_model():
 model, scaler = load_model()
 
 # =========================
-# 🧠 LOAD SHAP EXPLAINER (FIXED)
+# 🧠 LOAD SHAP
 # =========================
 @st.cache_resource
 def load_explainer():
     return shap.Explainer(model)
 
 explainer = load_explainer()
+
 # =========================
 # 🌱 TITLE
 # =========================
 st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
 
 # =========================
-# 📊 INPUTS (SIDEBAR)
-# =========================
-st.sidebar.header("🌍 Input Parameters")
-
-N = st.sidebar.number_input("Nitrogen (N)", min_value=0.0, value=50.0)
-P = st.sidebar.number_input("Phosphorus (P)", min_value=0.0, value=50.0)
-K = st.sidebar.number_input("Potassium (K)", min_value=0.0, value=50.0)
-temperature = st.sidebar.number_input("Temperature (°C)", value=25.0)
-humidity = st.sidebar.number_input("Humidity (%)", value=60.0)
-ph = st.sidebar.number_input("Soil pH", value=6.5)
-rainfall = st.sidebar.number_input("Rainfall (mm)", value=100.0)
-
-# =========================
-# 🎯 CROP ICONS
+# 🎯 ICONS
 # =========================
 crop_icons = {
     "rice": "🌾",
@@ -165,12 +143,12 @@ crop_icons = {
 tab1, tab2, tab3 = st.tabs(["🌾 Prediction", "📊 Insights", "📘 About"])
 
 # =========================
-# 🌾 TAB 1: PREDICTION
+# 🌾 TAB 1
 # =========================
 with tab1:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-    st.markdown("### 🌿 Run Prediction")
+    st.subheader("🌿 Run Prediction")
     recommend = st.button("🌱 Recommend Crop", use_container_width=True)
 
     if recommend:
@@ -187,7 +165,7 @@ with tab1:
 
             confidence = np.max(probabilities) * 100
 
-            # Save for other tabs
+            # Save state
             st.session_state["prediction"] = prediction
             st.session_state["probabilities"] = probabilities
             st.session_state["shap_values"] = shap_values
@@ -206,7 +184,7 @@ with tab1:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================
-# 📊 TAB 2: INSIGHTS
+# 📊 TAB 2
 # =========================
 with tab2:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -220,7 +198,7 @@ with tab2:
             "Probability": probabilities[0]
         })
 
-        # Top 5 chart
+        # Top 5
         top_df = prob_df.sort_values(by="Probability", ascending=False).head(5)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -228,7 +206,7 @@ with tab2:
         st.bar_chart(top_df.set_index("Crop"))
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Top 3 text
+        # Top 3
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 🌾 Top 3 Crops")
 
@@ -240,16 +218,16 @@ with tab2:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # SHAP Explainability
+        # SHAP
         if "shap_values" in st.session_state:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.write("### 🧠 Why this prediction?")
 
             shap_values = st.session_state["shap_values"]
 
-            st.set_option('deprecation.showPyplotGlobalUse', False)
+            fig, ax = plt.subplots()
             shap.plots.bar(shap_values[0], show=False)
-            st.pyplot(bbox_inches='tight')
+            st.pyplot(fig)
 
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -259,7 +237,7 @@ with tab2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================
-# 📘 TAB 3: ABOUT
+# 📘 TAB 3
 # =========================
 with tab3:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -268,9 +246,7 @@ with tab3:
     <div class="card">
     <h3>📘 About This System</h3>
 
-    <p>
-    This AI-powered system recommends the best crops based on:
-    </p>
+    <p>This AI system recommends crops using:</p>
 
     <ul>
     <li>🌱 Soil nutrients (N, P, K)</li>
@@ -281,7 +257,7 @@ with tab3:
     </ul>
 
     <p>
-    Built using <b>Machine Learning</b>, <b>Streamlit</b>, and <b>Explainable AI (SHAP)</b>.
+    Built with <b>Machine Learning</b>, <b>Streamlit</b>, and <b>SHAP</b>.
     </p>
     </div>
     """, unsafe_allow_html=True)
