@@ -11,51 +11,70 @@ st.set_page_config(
     layout="wide"
 )
 
-# ✅ MODERN UI STYLING (UPDATED)
+# ✅ FULL UI STYLING
 st.markdown("""
 <style>
-/* Main background */
+
+/* 🌈 Background */
 .stApp {
-    background: linear-gradient(135deg, #f0fdf4, #e0f2fe);
+    background: linear-gradient(135deg, #dbeafe, #f0fdf4);
 }
 
-/* Titles */
-h1, h2, h3 {
-    color: #064e3b;
-    text-align: center;
+/* Main spacing */
+.block-container {
+    padding-top: 2rem;
 }
 
-/* Sidebar */
+/* 🧊 Main centered container */
+.main-card {
+    background: white;
+    padding: 35px;
+    border-radius: 20px;
+    max-width: 900px;
+    margin: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* 🌿 Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #022c22;
+    background: linear-gradient(180deg, #065f46, #022c22);
 }
 [data-testid="stSidebar"] * {
     color: white;
 }
 
-/* Buttons */
+/* 🔘 Button */
 .stButton>button {
-    background-color: #22c55e;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
     color: white;
     font-size: 18px;
-    border-radius: 10px;
-    padding: 10px;
-    width: 100%;
+    border-radius: 12px;
+    padding: 12px;
+    border: none;
+    transition: 0.3s;
+}
+.stButton>button:hover {
+    transform: scale(1.03);
 }
 
-/* Input fields */
-.stNumberInput input {
-    border-radius: 8px;
-}
-
-/* Card style */
+/* 📦 Inner cards */
 .card {
-    background-color: white;
-    padding: 25px;
+    background-color: #f9fafb;
+    padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
+    margin-top: 15px;
 }
+
+/* Titles */
+h1 {
+    text-align: center;
+    color: #064e3b;
+}
+h3 {
+    color: #065f46;
+    text-align: center;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,9 +83,12 @@ base_path = os.path.dirname(__file__)
 model = pickle.load(open(os.path.join(base_path, 'model.pkl'), 'rb'))
 scaler = pickle.load(open(os.path.join(base_path, 'scaler.pkl'), 'rb'))
 
-# ✅ Title Section
+# ✅ Title
 st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;'>Enter soil and weather conditions to get the best crop recommendation</p>", unsafe_allow_html=True)
+
+# ✅ START MAIN CONTAINER
+st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
 # ✅ Sidebar Inputs
 st.sidebar.header("🌍 Input Parameters")
@@ -79,10 +101,15 @@ humidity = st.sidebar.number_input("Humidity (%)", 0.0)
 ph = st.sidebar.number_input("Soil pH", 0.0)
 rainfall = st.sidebar.number_input("Rainfall (mm)", 0.0)
 
-st.write("")
+st.markdown("<br>", unsafe_allow_html=True)
 
-# ✅ BUTTON
-if st.button("🌱 Recommend Crop"):
+# ✅ CENTERED BUTTON
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    recommend = st.button("🌱 Recommend Crop", use_container_width=True)
+
+# ✅ Prediction Logic
+if recommend:
 
     if N == 0 or P == 0 or K == 0:
         st.warning("⚠️ Please enter valid soil nutrient values.")
@@ -95,16 +122,16 @@ if st.button("🌱 Recommend Crop"):
 
         confidence = np.max(probabilities) * 100
 
-        # ✅ RESULT CARD
+        # 🌾 Result
         st.markdown(f"""
-        <div class="card" style="text-align:center; font-size:24px;">
-            🌾 <b>Recommended Crop:</b> {prediction[0]}
+        <div class="card" style="text-align:center; font-size:26px;">
+            🌾 <b>{prediction[0]}</b>
         </div>
         """, unsafe_allow_html=True)
 
         st.success(f"📊 Confidence Level: {confidence:.2f}%")
 
-        # ✅ Top 3 Crops (Card)
+        # 🌾 Top 3
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 🌾 Top 3 Recommended Crops:")
         probs = probabilities[0]
@@ -114,7 +141,7 @@ if st.button("🌱 Recommend Crop"):
             st.write(f"**{model.classes_[i]}** → {probs[i]*100:.2f}%")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # ✅ Explanation (Card)
+        # 💡 Explanation
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 💡 Why this crop?")
         if prediction[0] == "rice":
@@ -127,7 +154,7 @@ if st.button("🌱 Recommend Crop"):
             st.write("This crop matches the given conditions.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # ✅ Chart (Card)
+        # 📊 Chart
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 📊 Prediction Probabilities")
 
@@ -139,11 +166,13 @@ if st.button("🌱 Recommend Crop"):
         st.bar_chart(prob_df.set_index("Crop"))
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ✅ About Section (Card)
-st.write("")
+# 📘 About
 st.markdown("""
 <div class="card">
 <h3>📘 About This Project</h3>
 <p>This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning models.</p>
 </div>
 """, unsafe_allow_html=True)
+
+# ✅ END MAIN CONTAINER
+st.markdown('</div>', unsafe_allow_html=True)
