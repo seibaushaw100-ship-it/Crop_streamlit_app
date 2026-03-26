@@ -3,82 +3,45 @@ import numpy as np
 import pickle
 import pandas as pd
 import os
-import altair as alt
 
-# ------------------------------
-# Page config
-# ------------------------------
+# ✅ Page config (ONLY ONCE)
 st.set_page_config(
     page_title="Smart Crop System",
     page_icon="🌱",
     layout="wide"
 )
 
-# ------------------------------
-# Custom CSS Styling
-# ------------------------------
+# ✅ Styling
 st.markdown("""
 <style>
-/* Main background */
-[data-testid="stAppViewContainer"] {
-    background-color: #0E1117;  /* dark main background */
-    color: #E0E0E0;  /* soft text */
+.main {
+    background-color: #0E1117;
 }
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background-color: #161B22;
-    padding: 20px;
-}
-
-/* Headers */
 h1, h2, h3 {
     color: #00FF7F;
     text-align: center;
-    font-family: 'Arial', sans-serif;
 }
-
-/* Buttons */
-.stButton > button {
-    background: linear-gradient(90deg, #00FF7F, #00c853);
+.stButton>button {
+    background-color: #00FF7F;
     color: black;
     font-size: 18px;
-    border-radius: 12px;
-    padding: 12px;
-    width: 100%;
-}
-.stButton > button:hover {
-    background: linear-gradient(90deg, #00c853, #00FF7F);
-}
-
-/* Card container for prediction */
-.card {
-    background: linear-gradient(135deg, #1E1E1E, #2C2C2C);
-    padding: 30px;
-    border-radius: 20px;
-    text-align: center;
-    margin-top: 20px;
-}
-
-/* Metrics text */
-.stMetric label, .stMetric div {
-    color: #E0E0E0;
+    border-radius: 10px;
+    padding: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------------
-# Load Model & Scaler
-# ------------------------------
+# ✅ Load model safely
 base_path = os.path.dirname(__file__)
 model = pickle.load(open(os.path.join(base_path, 'model.pkl'), 'rb'))
 scaler = pickle.load(open(os.path.join(base_path, 'scaler.pkl'), 'rb'))
 
-# ------------------------------
-# Sidebar Inputs
-# ------------------------------
-st.sidebar.success("✅ Model Ready")
-st.sidebar.markdown("## 🌍 Input Parameters")
+# ✅ Title
+st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;'>Enter soil and weather conditions to get the best crop recommendation</p>", unsafe_allow_html=True)
+
+# ✅ Sidebar Inputs
+st.sidebar.header("🌍 Input Parameters")
 
 N = st.sidebar.number_input("Nitrogen (N)", 0.0)
 P = st.sidebar.number_input("Phosphorus (P)", 0.0)
@@ -88,99 +51,64 @@ humidity = st.sidebar.number_input("Humidity (%)", 0.0)
 ph = st.sidebar.number_input("Soil pH", 0.0)
 rainfall = st.sidebar.number_input("Rainfall (mm)", 0.0)
 
-# ------------------------------
-# Header
-# ------------------------------
-st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;'>AI-powered crop prediction for smart farming decisions</p>", unsafe_allow_html=True)
 st.write("---")
 
-# ------------------------------
-# Layout Columns
-# ------------------------------
-col1, col2 = st.columns([1, 2])
+# ✅ BUTTON (IMPORTANT FIX)
+if st.button("🌱 Recommend Crop"):
 
-with col2:
-    st.subheader("🌾 Prediction Result")
+    if N == 0 or P == 0 or K == 0:
+        st.warning("⚠️ Please enter valid soil nutrient values.")
+    else:
+        input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
+        input_scaled = scaler.transform(input_data)
 
-    if st.button("🚀 Recommend Crop"):
+        prediction = model.predict(input_scaled)
+        probabilities = model.predict_proba(input_scaled)
 
-        # Input validation
-        if N == 0 or P == 0 or K == 0:
-            st.warning("⚠️ Please enter valid soil nutrient values.")
+        confidence = np.max(probabilities) * 100
+
+        # ✅ RESULT CARD (PRO UI)
+        st.markdown(f"""
+        <div style="
+            background-color:#262730;
+            padding:20px;
+            border-radius:15px;
+            text-align:center;
+            font-size:24px;">
+            🌾 <b>Recommended Crop:</b> {prediction[0]}
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.info(f"📊 Confidence Level: {confidence:.2f}%")
+
+        # ✅ Top 3 Crops
+        probs = probabilities[0]
+        top_indices = probs.argsort()[-3:][::-1]
+
+        st.write("### 🌾 Top 3 Recommended Crops:")
+        for i in top_indices:
+            st.write(f"{model.classes_[i]}: {probs[i]*100:.2f}%")
+
+        # ✅ Explanation
+        st.write("### 💡 Why this crop?")
+        if prediction[0] == "rice":
+            st.write("Rice thrives in high rainfall and high humidity conditions.")
+        elif prediction[0] == "maize":
+            st.write("Maize grows well in moderate rainfall and balanced soil nutrients.")
+        elif prediction[0] == "coffee":
+            st.write("Coffee requires moderate rainfall and specific temperature ranges.")
         else:
-            # Prepare data
-            input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
-            input_scaled = scaler.transform(input_data)
+            st.write("This crop matches the given conditions.")
 
-            # Predict
-            prediction = model.predict(input_scaled)
-            probabilities = model.predict_proba(input_scaled)
-            confidence = np.max(probabilities) * 100
+        # ✅ Chart
+        st.write("### 📊 Prediction Probabilities")
+        prob_df = pd.DataFrame({
+            "Crop": model.classes_,
+            "Probability": probabilities[0]
+        })
+        st.bar_chart(prob_df.set_index("Crop"))
 
-            # ------------------------------
-            # Prediction Card
-            # ------------------------------
-            st.markdown(f"""
-            <div class="card">
-                <h2 style="color:#00FF7F;">🌾 Recommended Crop</h2>
-                <h1 style="color:white; font-size:40px;">{prediction[0].upper()}</h1>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # ------------------------------
-            # Metrics
-            # ------------------------------
-            m1, m2 = st.columns(2)
-            m1.metric("Confidence", f"{confidence:.2f}%")
-            m2.metric("Soil pH", f"{ph}")
-
-            # ------------------------------
-            # Top 3 Crops
-            # ------------------------------
-            st.write("### 🌾 Top 3 Crops")
-            probs = probabilities[0]
-            top_indices = probs.argsort()[-3:][::-1]
-
-            for i in top_indices:
-                st.progress(float(probs[i]))
-                st.write(f"🌱 {model.classes_[i]} → {probs[i]*100:.2f}%")
-
-            # ------------------------------
-            # Why this crop?
-            # ------------------------------
-            st.write("### 💡 Why this crop?")
-            if prediction[0] == "rice":
-                st.write("Rice thrives in high rainfall and humidity.")
-            elif prediction[0] == "maize":
-                st.write("Maize grows well in moderate rainfall and balanced nutrients.")
-            elif prediction[0] == "coffee":
-                st.write("Coffee requires specific temperature and rainfall conditions.")
-            else:
-                st.write("This crop matches your soil and weather conditions.")
-
-            # ------------------------------
-            # Prediction Distribution Chart
-            # ------------------------------
-            prob_df = pd.DataFrame({
-                "Crop": model.classes_,
-                "Probability": probabilities[0]
-            })
-
-            chart = alt.Chart(prob_df).mark_bar().encode(
-                x='Crop',
-                y='Probability',
-                color=alt.Color('Crop', scale=alt.Scale(range=['#00FF7F', '#00c853', '#43A047', '#E53935']))
-            ).properties(width=600, height=300)
-
-            st.altair_chart(chart, use_container_width=True)
-
-# ------------------------------
-# Footer
-# ------------------------------
+# ✅ About section
 st.write("---")
-st.markdown("""
-<center>
-🌍 Made with ❤️ for Smart Agriculture | AI Crop Recommendation System
-</center>
-""", unsafe_allow_html=True)
+st.write("### 📘 About This Project")
+st.write("This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning models.")
