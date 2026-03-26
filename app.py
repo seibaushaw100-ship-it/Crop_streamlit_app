@@ -4,7 +4,6 @@ import pickle
 import pandas as pd
 import os
 import shap
-import matplotlib.pyplot as plt
 
 # =========================
 # ⚙️ PAGE CONFIG
@@ -182,7 +181,6 @@ with tab1:
             st.success(f"Confidence: {confidence:.2f}%")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
 # =========================
 # 📊 TAB 2
 # =========================
@@ -218,16 +216,24 @@ with tab2:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # SHAP
+        # ✅ SHAP (FIXED POSITION + INDENTATION)
         if "shap_values" in st.session_state:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.write("### 🧠 Why this prediction?")
 
             shap_values = st.session_state["shap_values"]
 
-            fig, ax = plt.subplots()
-            shap.plots.bar(shap_values[0], show=False)
-            st.pyplot(fig)
+            values = shap_values.values[0]
+
+            feature_names = ["N", "P", "K", "Temperature", "Humidity", "pH", "Rainfall"]
+
+            shap_df = pd.DataFrame({
+                "Feature": feature_names,
+                "Impact": values
+            }).sort_values(by="Impact", key=abs, ascending=False)
+
+            st.write("Positive = increases prediction, Negative = decreases")
+            st.bar_chart(shap_df.set_index("Feature"))
 
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -235,7 +241,6 @@ with tab2:
         st.info("Run a prediction first to see insights.")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
 # =========================
 # 📘 TAB 3
 # =========================
