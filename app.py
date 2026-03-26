@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import numpy as np
 import pickle
@@ -11,31 +12,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# ✅ FULL UI STYLING
+# ✅ UI Styling (Dashboard Level)
 st.markdown("""
 <style>
 
 /* 🌈 Background */
-.stApp {
-    background: linear-gradient(135deg, #dbeafe, #f0fdf4);
+html, body, [data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #dbeafe, #f0fdf4) !important;
 }
 
-/* Main spacing */
-.block-container {
-    padding-top: 2rem;
-}
-
-/* 🧊 Main centered container */
-.main-card {
-    background: white;
-    padding: 35px;
-    border-radius: 20px;
-    max-width: 900px;
-    margin: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-}
-
-/* 🌿 Sidebar */
+/* Sidebar */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
@@ -43,36 +29,45 @@ st.markdown("""
     color: white;
 }
 
-/* 🔘 Button */
-.stButton>button {
-    background: linear-gradient(90deg, #22c55e, #16a34a);
-    color: white;
-    font-size: 18px;
-    border-radius: 12px;
-    padding: 12px;
-    border: none;
-    transition: 0.3s;
-}
-.stButton>button:hover {
-    transform: scale(1.03);
+/* Glass container */
+.glass {
+    background: rgba(255,255,255,0.85);
+    padding: 30px;
+    border-radius: 25px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
-/* 📦 Inner cards */
+/* Cards */
 .card {
-    background-color: #f9fafb;
+    background: white;
     padding: 20px;
-    border-radius: 15px;
+    border-radius: 18px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
     margin-top: 15px;
 }
 
-/* Titles */
+/* Button */
+.stButton>button {
+    background: linear-gradient(90deg, #22c55e, #15803d);
+    color: white;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 18px;
+    box-shadow: 0 6px 15px rgba(34,197,94,0.4);
+}
+
+/* Inputs */
+.stNumberInput input {
+    background-color: #ecfdf5;
+    border-radius: 10px;
+    border: 1px solid #bbf7d0;
+}
+
+/* Title */
 h1 {
     text-align: center;
-    color: #064e3b;
-}
-h3 {
-    color: #065f46;
-    text-align: center;
+    color: #022c22;
 }
 
 </style>
@@ -85,10 +80,6 @@ scaler = pickle.load(open(os.path.join(base_path, 'scaler.pkl'), 'rb'))
 
 # ✅ Title
 st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center;'>Enter soil and weather conditions to get the best crop recommendation</p>", unsafe_allow_html=True)
-
-# ✅ START MAIN CONTAINER
-st.markdown('<div class="main-card">', unsafe_allow_html=True)
 
 # ✅ Sidebar Inputs
 st.sidebar.header("🌍 Input Parameters")
@@ -101,78 +92,94 @@ humidity = st.sidebar.number_input("Humidity (%)", 0.0)
 ph = st.sidebar.number_input("Soil pH", 0.0)
 rainfall = st.sidebar.number_input("Rainfall (mm)", 0.0)
 
-st.markdown("<br>", unsafe_allow_html=True)
+# ✅ Tabs
+tab1, tab2, tab3 = st.tabs(["🌾 Prediction", "📊 Insights", "📘 About"])
 
-# ✅ CENTERED BUTTON
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    recommend = st.button("🌱 Recommend Crop", use_container_width=True)
+# =========================
+# 🌾 TAB 1: PREDICTION
+# =========================
+with tab1:
+    st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-# ✅ Prediction Logic
-if recommend:
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        recommend = st.button("🌱 Recommend Crop", use_container_width=True)
 
-    if N == 0 or P == 0 or K == 0:
-        st.warning("⚠️ Please enter valid soil nutrient values.")
-    else:
-        input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
-        input_scaled = scaler.transform(input_data)
-
-        prediction = model.predict(input_scaled)
-        probabilities = model.predict_proba(input_scaled)
-
-        confidence = np.max(probabilities) * 100
-
-        # 🌾 Result
-        st.markdown(f"""
-        <div class="card" style="text-align:center; font-size:26px;">
-            🌾 <b>{prediction[0]}</b>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.success(f"📊 Confidence Level: {confidence:.2f}%")
-
-        # 🌾 Top 3
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### 🌾 Top 3 Recommended Crops:")
-        probs = probabilities[0]
-        top_indices = probs.argsort()[-3:][::-1]
-
-        for i in top_indices:
-            st.write(f"**{model.classes_[i]}** → {probs[i]*100:.2f}%")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 💡 Explanation
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### 💡 Why this crop?")
-        if prediction[0] == "rice":
-            st.write("Rice thrives in high rainfall and high humidity conditions.")
-        elif prediction[0] == "maize":
-            st.write("Maize grows well in moderate rainfall and balanced soil nutrients.")
-        elif prediction[0] == "coffee":
-            st.write("Coffee requires moderate rainfall and specific temperature ranges.")
+    if recommend:
+        if N == 0 or P == 0 or K == 0:
+            st.warning("⚠️ Please enter valid soil nutrient values.")
         else:
-            st.write("This crop matches the given conditions.")
-        st.markdown('</div>', unsafe_allow_html=True)
+            input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
+            input_scaled = scaler.transform(input_data)
 
-        # 📊 Chart
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### 📊 Prediction Probabilities")
+            prediction = model.predict(input_scaled)
+            probabilities = model.predict_proba(input_scaled)
+            confidence = np.max(probabilities) * 100
+
+            # Save to session for other tabs
+            st.session_state["prediction"] = prediction
+            st.session_state["probabilities"] = probabilities
+
+            st.markdown(f"""
+            <div class="card" style="text-align:center; font-size:26px;">
+                🌾 <b>{prediction[0]}</b>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.success(f"Confidence: {confidence:.2f}%")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =========================
+# 📊 TAB 2: INSIGHTS
+# =========================
+with tab2:
+    st.markdown('<div class="glass">', unsafe_allow_html=True)
+
+    if "prediction" in st.session_state:
+
+        probabilities = st.session_state["probabilities"]
 
         prob_df = pd.DataFrame({
             "Crop": model.classes_,
             "Probability": probabilities[0]
         })
 
+        # Chart
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.write("### 📊 Prediction Probabilities")
         st.bar_chart(prob_df.set_index("Crop"))
         st.markdown('</div>', unsafe_allow_html=True)
 
-# 📘 About
-st.markdown("""
-<div class="card">
-<h3>📘 About This Project</h3>
-<p>This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning models.</p>
-</div>
-""", unsafe_allow_html=True)
+        # Top 3
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.write("### 🌾 Top 3 Crops")
 
-# ✅ END MAIN CONTAINER
-st.markdown('</div>', unsafe_allow_html=True)
+        probs = probabilities[0]
+        top_indices = probs.argsort()[-3:][::-1]
+
+        for i in top_indices:
+            st.write(f"{model.classes_[i]} → {probs[i]*100:.2f}%")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    else:
+        st.info("Run a prediction first to see insights.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =========================
+# 📘 TAB 3: ABOUT
+# =========================
+with tab3:
+    st.markdown('<div class="glass">', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="card">
+    <h3>📘 About This Project</h3>
+    <p>This AI-powered system recommends the best crops based on soil nutrients and weather conditions using machine learning.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+```
