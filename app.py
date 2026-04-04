@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # =========================
-# 🎨 UI STYLING
+# 🎨 UI STYLING (FIXED)
 # =========================
 st.markdown("""
 <style>
@@ -30,10 +30,7 @@ html, body, [data-testid="stAppViewContainer"] {
     color: white !important;
 }
 
-[data-testid="stSidebar"] input {
-    color: black !important;
-    background-color: #ecfdf5 !important;
-}
+/* ❌ REMOVED INPUT OVERRIDE THAT BROKE + / - */
 
 .glass {
     background: rgba(255,255,255,0.9);
@@ -64,17 +61,19 @@ h1 {
 """, unsafe_allow_html=True)
 
 # =========================
-# 📥 SIDEBAR INPUTS
+# 📥 SIDEBAR INPUTS (WITH LIMITS)
 # =========================
 st.sidebar.header("🌍 Input Parameters")
 
-N = st.sidebar.number_input("Nitrogen (N)", min_value=0.0)
-P = st.sidebar.number_input("Phosphorus (P)", min_value=0.0)
-K = st.sidebar.number_input("Potassium (K)", min_value=0.0)
-temperature = st.sidebar.number_input("Temperature (°C)", min_value=0.0)
-humidity = st.sidebar.number_input("Humidity (%)", min_value=0.0)
-ph = st.sidebar.number_input("Soil pH", min_value=0.0)
-rainfall = st.sidebar.number_input("Rainfall (mm)", min_value=0.0)
+N = st.sidebar.number_input("Nitrogen (N)", 0.0, 140.0, step=1.0)
+P = st.sidebar.number_input("Phosphorus (P)", 0.0, 145.0, step=1.0)
+K = st.sidebar.number_input("Potassium (K)", 0.0, 205.0, step=1.0)
+
+temperature = st.sidebar.number_input("Temperature (°C)", 0.0, 50.0, step=0.5)
+humidity = st.sidebar.number_input("Humidity (%)", 0.0, 100.0, step=1.0)
+
+ph = st.sidebar.number_input("Soil pH", 0.0, 14.0, step=0.1)
+rainfall = st.sidebar.number_input("Rainfall (mm)", 0.0, 300.0, step=1.0)
 
 # =========================
 # ⚡ LOAD MODEL
@@ -99,7 +98,7 @@ st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=
 tab1, tab2, tab3 = st.tabs(["📘 About", "🌾 Prediction", "📊 Insights"])
 
 # =========================
-# 📘 ABOUT
+# 📘 ABOUT + HOW TO USE
 # =========================
 with tab1:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -110,6 +109,22 @@ with tab1:
     <p>This system helps farmers choose the best crop based on soil and weather conditions using machine learning.</p>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="card">
+    <h3>🛠️ How to Use This App</h3>
+    <ol style="text-align:left; font-size:16px;">
+        <li>Go to the <b>🌾 Prediction</b> tab</li>
+        <li>Enter soil nutrients (N, P, K)</li>
+        <li>Enter weather data (Temperature, Humidity, Rainfall)</li>
+        <li>Enter soil pH</li>
+        <li>Click <b>Recommend Crop</b></li>
+        <li>View results and confidence level</li>
+    </ol>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.info("💡 Tip: Use realistic values for best results.")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -140,17 +155,23 @@ with tab2:
         probas = st.session_state["probabilities"]
         classes = model.classes_
 
-        top_idx = np.argmax(probas)
-        confidence = probas[top_idx] * 100
+        confidence = np.max(probas) * 100
 
-        # 🌾 Crop Card
+        # 🌾 Result Card (FIXED VISIBILITY)
         st.markdown(f"""
-        <div class="card">
-            <h2>🌾 {crop.upper()}</h2>
+        <div style="
+            background: linear-gradient(135deg, #22c55e, #15803d);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;">
+            🌾 {crop.upper()}
         </div>
         """, unsafe_allow_html=True)
 
-        # 📊 Confidence Section
+        # 📊 Confidence
         st.markdown("### 📊 Confidence Level")
 
         if confidence > 75:
@@ -164,7 +185,7 @@ with tab2:
 
         st.divider()
 
-        # 🌾 Top 3 Predictions
+        # 🌾 Top 3
         st.subheader("🔝 Top 3 Predictions")
         top3_idx = np.argsort(probas)[-3:][::-1]
 
@@ -195,7 +216,7 @@ with tab3:
 
         crop_explanations = {
             "rice": "Rice thrives in high rainfall and humidity.",
-            "maize": "Maize grows well in balanced soil nutrients.",
+            "maize": "Maize grows well in balanced nutrients.",
             "coffee": "Coffee requires stable temperature and rainfall.",
         }
 
@@ -203,7 +224,7 @@ with tab3:
 
         st.write(crop_explanations.get(
             crop_name,
-            "This crop best matches your soil and weather conditions."
+            "This crop best matches your conditions."
         ))
 
         st.markdown('</div>', unsafe_allow_html=True)
