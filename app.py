@@ -70,7 +70,7 @@ h1 {
 """, unsafe_allow_html=True)
 
 # SIDEBAR INPUTS (WITH LIMITS)
-st.sidebar.header("Input Parameters")
+st.sidebar.header(" 🌍 Input Parameters")
 
 N = st.sidebar.number_input("Nitrogen (N)", 0.0, 140.0, step=1.0)
 P = st.sidebar.number_input("Phosphorus (P)", 0.0, 145.0, step=1.0)
@@ -111,9 +111,9 @@ with tab1:
 
     st.markdown("""
     <div class="card">
-    <h3> How to Use This App</h3>
+    <h3> 🛠️  How to Use This App</h3>
     <ol style="text-align:left; font-size:16px;">
-        <li>Go to the <b> Prediction</b> tab</li>
+        <li>Go to the <b> 🌾 Prediction</b> tab</li>
         <li>Enter soil nutrients (N, P, K)</li>
         <li>Enter weather data (Temperature, Humidity, Rainfall)</li>
         <li>Enter soil pH</li>
@@ -123,7 +123,7 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
-    st.info("Tip: Use realistic values for best results.")
+    st.info("Tip:💡 Use realistic values for best results.")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -131,7 +131,7 @@ with tab1:
 with tab2:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-    if st.button(" Recommend Crop", use_container_width=True):
+    if st.button(" 🌱 Recommend Crop", use_container_width=True):
 
         if any(v == 0 for v in [N, P, K]):
             st.warning("⚠️ Please enter valid soil nutrient values.")
@@ -164,7 +164,7 @@ with tab2:
             color: white;
             font-size: 28px;
             font-weight: bold;">
-             {crop.upper()}
+            🌾 {crop.upper()}
         </div>
         """, unsafe_allow_html=True)
 
@@ -187,7 +187,7 @@ with tab2:
         top3_idx = np.argsort(probas)[-3:][::-1]
 
         for i in top3_idx:
-            st.write(f"**{classes[i]}** — {probas[i]*100:.2f}%")
+            st.write(f" 🌱 **{classes[i]}** — {probas[i]*100:.2f}%")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -207,7 +207,7 @@ with tab3:
         st.bar_chart(prob_df.set_index("Crop"))
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.write("### Why this crop?")
+        st.write("### 💡 Why this crop?")
 
         crop_explanations = {
             "rice": "Rice thrives in high rainfall and humidity.",
