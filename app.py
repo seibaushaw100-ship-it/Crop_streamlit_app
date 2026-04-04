@@ -19,29 +19,44 @@ st.set_page_config(
 st.markdown("""
 <style>
 html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #dbeafe, #f0fdf4) !important;
+    background: linear-gradient(135deg, #dbeafe, #f0fdf4);
 }
+
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
-[data-testid="stSidebar"] label {
+
+[data-testid="stSidebar"] * {
     color: white !important;
 }
+
 [data-testid="stSidebar"] input {
     color: black !important;
     background-color: #ecfdf5 !important;
 }
+
 .glass {
-    background: rgba(255,255,255,0.85);
-    padding: 30px;
-    border-radius: 25px;
+    background: rgba(255,255,255,0.9);
+    padding: 25px;
+    border-radius: 20px;
 }
+
 .card {
     background: white;
     padding: 20px;
-    border-radius: 18px;
+    border-radius: 15px;
     margin-top: 15px;
+    text-align: center;
 }
+
+.stButton>button {
+    background: linear-gradient(90deg, #22c55e, #15803d);
+    color: white;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+}
+
 h1 {
     text-align: center;
 }
@@ -51,14 +66,14 @@ h1 {
 # =========================
 # 📥 SIDEBAR INPUTS
 # =========================
-st.sidebar.header("🌾 Input Soil Data")
+st.sidebar.header("🌍 Input Parameters")
 
 N = st.sidebar.number_input("Nitrogen (N)", min_value=0.0)
 P = st.sidebar.number_input("Phosphorus (P)", min_value=0.0)
 K = st.sidebar.number_input("Potassium (K)", min_value=0.0)
 temperature = st.sidebar.number_input("Temperature (°C)", min_value=0.0)
 humidity = st.sidebar.number_input("Humidity (%)", min_value=0.0)
-ph = st.sidebar.number_input("pH", min_value=0.0)
+ph = st.sidebar.number_input("Soil pH", min_value=0.0)
 rainfall = st.sidebar.number_input("Rainfall (mm)", min_value=0.0)
 
 # =========================
@@ -79,12 +94,12 @@ model, scaler = load_model()
 st.markdown("<h1>🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
 
 # =========================
-# 📑 TABS (FIXED ORDER)
+# 📑 TABS
 # =========================
 tab1, tab2, tab3 = st.tabs(["📘 About", "🌾 Prediction", "📊 Insights"])
 
 # =========================
-# 📘 TAB 1 → ABOUT
+# 📘 ABOUT
 # =========================
 with tab1:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -92,61 +107,74 @@ with tab1:
     st.markdown("""
     <div class="card">
     <h3>📘 About This System</h3>
-
-    <p>This system helps farmers and researchers choose the most suitable crop
-    based on environmental and soil conditions, improving yield and decision-making.</p>
-
-    <p>This AI system recommends crops using:</p>
-
-    <ul>
-    <li>🌱 Soil nutrients (N, P, K)</li>
-    <li>🌡 Temperature</li>
-    <li>💧 Humidity</li>
-    <li>🧪 Soil pH</li>
-    <li>🌧 Rainfall</li>
-    </ul>
-
-    <h4>🛠 How to Use</h4>
-    <ul>
-    <li>Enter values in the sidebar</li>
-    <li>Click <b>Recommend Crop</b></li>
-    <li>Check results in Prediction tab</li>
-    </ul>
-
+    <p>This system helps farmers choose the best crop based on soil and weather conditions using machine learning.</p>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================
-# 🌾 TAB 2 → PREDICTION
+# 🌾 PREDICTION
 # =========================
 with tab2:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
 
-    recommend = st.button("🌱 Recommend Crop", use_container_width=True)
+    if st.button("🌱 Recommend Crop", use_container_width=True):
 
-    if recommend:
-        if any(v <= 0 for v in [N, P, K, temperature, humidity, ph, rainfall]):
-            st.warning("⚠️ Please enter all values greater than 0.")
+        if any(v == 0 for v in [N, P, K]):
+            st.warning("⚠️ Please enter valid soil nutrient values.")
         else:
             input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
-            input_scaled = scaler.transform(input_data)
+            scaled_data = scaler.transform(input_data)
 
-            prediction = model.predict(input_scaled)
-            probabilities = model.predict_proba(input_scaled)
+            prediction = model.predict(scaled_data)[0]
+            probabilities = model.predict_proba(scaled_data)[0]
 
             st.session_state["prediction"] = prediction
             st.session_state["probabilities"] = probabilities
 
-            crop = prediction[0]
+    # ✅ SHOW RESULT
+    if "prediction" in st.session_state:
 
-            st.markdown(f"<div class='card'><h2>{crop}</h2></div>", unsafe_allow_html=True)
+        crop = st.session_state["prediction"]
+        probas = st.session_state["probabilities"]
+        classes = model.classes_
+
+        top_idx = np.argmax(probas)
+        confidence = probas[top_idx] * 100
+
+        # 🌾 Crop Card
+        st.markdown(f"""
+        <div class="card">
+            <h2>🌾 {crop.upper()}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 📊 Confidence Section
+        st.markdown("### 📊 Confidence Level")
+
+        if confidence > 75:
+            st.success(f"High Confidence: {confidence:.2f}%")
+        elif confidence > 50:
+            st.warning(f"Moderate Confidence: {confidence:.2f}%")
+        else:
+            st.error(f"Low Confidence: {confidence:.2f}%")
+
+        st.progress(int(confidence))
+
+        st.divider()
+
+        # 🌾 Top 3 Predictions
+        st.subheader("🔝 Top 3 Predictions")
+        top3_idx = np.argsort(probas)[-3:][::-1]
+
+        for i in top3_idx:
+            st.write(f"🌱 **{classes[i]}** — {probas[i]*100:.2f}%")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================
-# 📊 TAB 3 → INSIGHTS
+# 📊 INSIGHTS
 # =========================
 with tab3:
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -157,26 +185,25 @@ with tab3:
 
         prob_df = pd.DataFrame({
             "Crop": model.classes_,
-            "Probability": probabilities[0]
+            "Probability": probabilities
         })
 
         st.bar_chart(prob_df.set_index("Crop"))
 
-        # 💡 SIMPLE EXPLANATION (NO SHAP)
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.write("### 💡 Why this crop?")
 
         crop_explanations = {
-            "rice": "Rice thrives in high rainfall and high humidity conditions.",
-            "maize": "Maize grows well with moderate rainfall and balanced soil nutrients.",
-            "coffee": "Coffee requires specific temperature ranges and consistent rainfall.",
+            "rice": "Rice thrives in high rainfall and humidity.",
+            "maize": "Maize grows well in balanced soil nutrients.",
+            "coffee": "Coffee requires stable temperature and rainfall.",
         }
 
-        crop_name = st.session_state["prediction"][0].lower()
+        crop_name = st.session_state["prediction"].lower()
 
         st.write(crop_explanations.get(
             crop_name,
-            "This crop suits your soil and weather conditions."
+            "This crop best matches your soil and weather conditions."
         ))
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -185,3 +212,13 @@ with tab3:
         st.info("Run a prediction first.")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+# =========================
+# 🧾 FOOTER
+# =========================
+st.write("---")
+st.markdown("""
+<center>
+🌍 Made with ❤️ for Smart Agriculture | AI Crop Recommendation System
+</center>
+""", unsafe_allow_html=True)
