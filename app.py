@@ -93,7 +93,7 @@ def load_model():
 model, scaler = load_model()
 
 # TITLE
-st.markdown("<h1> Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
+st.markdown("<h1> 🌱 Smart Crop Recommendation System</h1>", unsafe_allow_html=True)
 
 # TABS
 tab1, tab2, tab3 = st.tabs(["📘 About", "🌾 Prediction", "📊 Insights"])
