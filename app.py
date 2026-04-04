@@ -237,7 +237,7 @@ with tab3:
 
         st.write(crop_explanations.get(
             crop_name,
-            "This crop best matches your conditions."
+            "This crop matches the given soil nutrients and environmental conditions."
         ))
 
         st.markdown('</div>', unsafe_allow_html=True)
