@@ -25,11 +25,24 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #065f46, #022c22);
 }
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #065f46, #022c22);
+}
 
-[data-testid="stSidebar"] * {
+/* Only style text, NOT everything */
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
     color: white !important;
 }
 
+/* Fix number input controls */
+[data-testid="stSidebar"] button {
+    background-color: #d1fae5 !important;
+    color: black !important;
+    border-radius: 5px;
+}
 /* ❌ REMOVED INPUT OVERRIDE THAT BROKE + / - */
 
 .glass {
